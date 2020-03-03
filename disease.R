@@ -4,9 +4,10 @@ library('spatstat');
 library('sp');
 library('ggplot2');
 
-R0 <- 3;
-totalExposed <- 10;
-CFR <- 0.1;
+R0 <- 2.0;
+Susceptible <- 0.9;
+R <- R0 * Susceptible; 
+CFR <- 0.828;
 
 getColor = function(status) {
   # 0 - unexposed
@@ -16,15 +17,31 @@ getColor = function(status) {
   # 4 - dead
   return(
     if (status == 0) 'ghostwhite'
-    else if (status == 1) 'coral'
-    else if (status == 2) 'darkseagreen2'
-    else if (status == 3) 'azure4'
-    else if (status == 4) 'firebrick3'
+    else if (status == 1) 'firebrick3'
+    else if (status == 2) 'ghostwhite'
+    else if (status == 3) 'azure3'
+    else if (status == 4) 'gray10'
     else 'purple'
   );
 }
 
 getColors = function(statuses) lapply(statuses, function(s) getColor(s));
+
+# http://coleoguy.blogspot.com/2016/04/stochasticprobabilistic-rounding.html
+getStochRound <- function(x) {
+  ## extract the decimal portion
+  q = abs(x - trunc(x));
+  
+  ## draw a value 0 or 1 with probability
+  ## based on how close we already are
+  adj = sample(0:1, size = 1, prob = c(1 - q, q));
+  
+  ## make it negative if x is
+  if(x < 0) adj = adj * -1;
+  
+  ## return our new value
+  trunc(x) + adj;
+}
 
 pandemic <- function(size, steps, filename) {
   df <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size, status = 0))));
@@ -35,7 +52,7 @@ pandemic <- function(size, steps, filename) {
   saveGIF({
     for (i in 1:steps) {
       print(ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
-        geom_tile(color="black", size = 0.25) +
+        geom_point(color=getColors(df$status), size = 5) +
         labs(title="Pandemic") +
         theme(
           axis.title = element_blank(),
@@ -54,8 +71,8 @@ pandemic <- function(size, steps, filename) {
               v <- coordMap[j,];
               if (copy[copy$x == v$x & copy$y == v$y,]$status == 0) {
                 copy[copy$x == v$x & copy$y == v$y,]$status =
-                  if (exposed <= R0) 1
-                  else if (exposed < totalExposed) 2
+                  if (exposed <= getStochRound(R)) 1
+                  else if (exposed <= getStochRound(R0)) 2
                   else 0;
                 
                 exposed = exposed + 1;
@@ -71,4 +88,4 @@ pandemic <- function(size, steps, filename) {
   }, movie.name=filename, interval = 0.5, ani.width = 600);
 }
 
-pandemic(size=15, steps=15, file="pandemic.gif")
+pandemic(size=30, steps=10, file="ebola-R2-CFR0.828.gif")
