@@ -3,9 +3,16 @@ library('animation');
 library('spatstat');
 library('sp');
 library('ggplot2');
+library('R0');
 
-Susceptible <- 0.9;
-getR <- function(R0) (R0 * Susceptible); 
+# https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7
+getFinalUninfectedSusceptible <- function(R0) multiroot(
+  f = function(R0, S) return(S - exp(-R0 * (1 - S))),
+  start = 0,
+  positive = TRUE,
+  R0 = R0
+)$root;
+getR <- function(R0) (R0 * (1 - getFinalUninfectedSusceptible(R0))); 
 
 getColor = function(status) {
   # 0 - unexposed
@@ -81,19 +88,29 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
   }, movie.name=filename, interval = 2, ani.width = 600, ani.height = 600);
 }
 
+# R0s from https://en.wikipedia.org/wiki/Basic_reproduction_number
+# seasonal flu R0 https://www.ncbi.nlm.nih.gov/pubmed/19545404
+# CFR Covid-19 https://www.nytimes.com/2020/03/04/world/coronavirus-news.html
+# Ebola CFR https://academic.oup.com/cid/advance-article/doi/10.1093/cid/ciz678/5536742
+# Flu CFR https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates
+# SARS & MERS CFR https://www.worldometers.info/coronavirus/coronavirus-death-rate/
+# smallpox CFR https://en.wikipedia.org/wiki/Smallpox
+# measles CFR https://www.cdc.gov/vaccines/pubs/pinkbook/downloads/meas.pdf
+# Mumps CFR https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates
+# Rubella CFR (infants & in utero) https://www.cdc.gov/rubella/about/in-the-us.html
 toRender <- data.frame(
   name = c('Covid-19', 'Ebola', 'Influenza', 'MERS', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
   fileName = c('Covid-19.gif', 'Ebola.gif', 'Influenza.gif', 'MERS.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
-  CFR = c(0.014, 0.828, 0.001, 0.344, 0.096, 0.0002, 0.000, 0.30, 0.002),
-  R0 = c(2.5, 2, 2.5, 0.75, 3.5, 5.5, 7, 7, 15)
+  CFR = c(0.034, 0.828, 0.001, 0.344, 0.096, 0.01, 0.001, 0.30, 0.002),
+  R0 = c(2.6, 2, 1.3, 0.55, 3.5, 5.5, 6, 6, 15)
 );
 
 apply(
-  toRender,
+  toRender[1,],
   1,
   function(d) pandemic(
     size=30,
-    steps=2,
+    steps=15,
     file=(d[['fileName']]),
     name=(d[['name']]),
     R0=(as.numeric(d[['R0']])),
