@@ -6,13 +6,14 @@ library('ggplot2');
 library('R0');
 
 # https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7
+# "final size relation" https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3506030/
 getFinalUninfectedSusceptible <- function(R0) multiroot(
   f = function(R0, S) return(S - exp(-R0 * (1 - S))),
   start = 0,
   positive = TRUE,
   R0 = R0
 )$root;
-getR <- function(R0) (R0 * (1 - getFinalUninfectedSusceptible(R0))); 
+getEffectiveR <- function(R0) (R0 * (1 - getFinalUninfectedSusceptible(R0))); 
 
 getColor = function(status) {
   # 0 - unexposed
@@ -48,7 +49,7 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
   coordMap <- coordMap[order(coordMap$distance),];
   saveGIF({
     for (i in 1:steps) {
-      R <- getR(R0);
+      R <- getEffectiveR(R0);
       cfrString = paste(CFR*100, '%', sep='');
       print(ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
         geom_point(color=getColors(df$status), size = 5) +
@@ -106,7 +107,7 @@ toRender <- data.frame(
 );
 
 apply(
-  toRender[1,],
+  toRender,
   1,
   function(d) pandemic(
     size=30,
