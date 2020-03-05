@@ -4,16 +4,18 @@ library('spatstat');
 library('sp');
 library('ggplot2');
 library('R0');
+library('rootSolve');
 
 # https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7
 # "final size relation" https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3506030/
 getFinalUninfectedSusceptible <- function(R0) multiroot(
-  f = function(R0, S) return(S - exp(-R0 * (1 - S))),
+  f = function(R0, Sinf) return(Sinf - exp(-R0 * (1 - Sinf))),
   start = 0,
   positive = TRUE,
   R0 = R0
 )$root;
-getEffectiveR <- function(R0) (R0 * (1 - getFinalUninfectedSusceptible(R0))); 
+
+getEffectiveR <- function(R0) (if (R0 > 1) R0 * (1 - getFinalUninfectedSusceptible(R0)) else R0);
 
 getColor = function(status) {
   # 0 - unexposed
@@ -47,10 +49,11 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
   coordMap <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size))));
   coordMap$distance <- spDistsN1(as.matrix(coordMap[c("x", "y")]), c(ceiling(size/2), ceiling(size/2)));
   coordMap <- coordMap[order(coordMap$distance),];
+  R <- getEffectiveR(R0);
+  cfrString = paste(CFR*100, '%', sep='');
+
   saveGIF({
     for (i in 1:steps) {
-      R <- getEffectiveR(R0);
-      cfrString = paste(CFR*100, '%', sep='');
       print(ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
         geom_point(color=getColors(df$status), size = 5) +
         labs(caption=paste(name, ' (R0=', R0, ', CFR=', cfrString, ')', sep='')) +
@@ -68,15 +71,16 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
       for (x1 in 1:size) {
         for (y1 in 1:size) {
           if (df[df$x == x1 & df$y == y1,]$status == 1) {
-            exposed <- 0;
-            for(j in 1:nrow(coordMap)) {
-              v <- coordMap[j,];
-              if (copy[copy$x == v$x & copy$y == v$y,]$status == 0) {
-                copy[copy$x == v$x & copy$y == v$y,]$status =
-                  if (exposed <= getStochRound(R)) 1
-                  else if (exposed <= getStochRound(R0)) 2
+            contacts <- 0;
+            for (j in 1:nrow(coordMap)) {
+              potentialVictim <- coordMap[j,];
+              if (copy[copy$x == potentialVictim$x & copy$y == potentialVictim$y,]$status == 0) { # contact naive
+                effectiveR <- getStochRound(R);
+                copy[copy$x == potentialVictim$x & copy$y == potentialVictim$y,]$status =
+                  if (effectiveR > 0 && contacts <= effectiveR) 1
+                  else if (contacts <= getStochRound(R0)) 2
                   else 0;
-                exposed = exposed + 1;
+                contacts = contacts + 1;
               }
             }
             coordMap <- coordMap[coordMap$x != x1 | coordMap$y != y1,];
@@ -100,10 +104,10 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
 # Mumps CFR https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates
 # Rubella CFR (infants & in utero) https://www.cdc.gov/rubella/about/in-the-us.html
 toRender <- data.frame(
-  name = c('Covid-19', 'Ebola', 'Influenza', 'MERS', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
-  fileName = c('Covid-19.gif', 'Ebola.gif', 'Influenza.gif', 'MERS.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
-  CFR = c(0.034, 0.828, 0.001, 0.344, 0.096, 0.01, 0.001, 0.30, 0.002),
-  R0 = c(2.6, 2, 1.3, 0.55, 3.5, 5.5, 6, 6, 15)
+  name = c('MERS', 'Influenza', 'Covid-19', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
+  fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
+  CFR = c(0.344, 0.001, 0.034, 0.828, 0.096, 0.01, 0.001, 0.30, 0.002),
+  R0 = c(0.55, 1.3, 2.6, 2, 3.5, 5.5, 6, 6, 15)
 );
 
 apply(
@@ -118,5 +122,3 @@ apply(
     CFR=(as.numeric(d[['CFR']]))
   )
 )
-
-
