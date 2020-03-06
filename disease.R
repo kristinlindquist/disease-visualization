@@ -5,6 +5,7 @@ library('sp');
 library('ggplot2');
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
+# ... assumes "susceptible depletion" kicking in
 getRt <- function(N, stillSusceptible, R0) ((N - stillSusceptible)/N) * R0;
 getEffectiveR <- function(df, R0) round(getRt(nrow(df), nrow(subset(df, status != 0)), R0), 2);
 
@@ -37,9 +38,8 @@ getStochRound <- function(x) {
 pandemic <- function(size, steps, filename, name, R0, CFR) {
   df <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size, status = 0))));
   df[df$x == ceiling(size/2) & df$y == ceiling(size/2),]$status = 1;
-  coordMap <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size))));
-  coordMap$distance <- spDistsN1(as.matrix(coordMap[c("x", "y")]), c(ceiling(size/2), ceiling(size/2)));
-  coordMap <- coordMap[order(coordMap$distance),];
+  df$distance <- spDistsN1(as.matrix(df[c("x", "y")]), c(ceiling(size/2), ceiling(size/2)));
+  df <- df[order(df$distance),];
   cfrString = paste(CFR*100, '%', sep='');
   saveGIF({
     for (i in 1:steps) {
@@ -72,20 +72,10 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
       for (x1 in 1:size) {
         for (y1 in 1:size) {
           if (df[df$x == x1 & df$y == y1,]$status == 1) {
-            contacts <- 0;
             thisR0 <- getStochRound(R0);
-            thisR <- getStochRound(getEffectiveR(df, R0));
-            for (j in 1:nrow(coordMap)) {
-              potentialVictim <- coordMap[j,];
-              if (copy[copy$x == potentialVictim$x & copy$y == potentialVictim$y,]$status == 0) { # contact naive
-                copy[copy$x == potentialVictim$x & copy$y == potentialVictim$y,]$status =
-                  if (thisR > 0 && contacts < thisR) 1
-                  else if (thisR > 0 && contacts < getStochRound(R0)) 2
-                  else 0;
-                contacts = contacts + 1;
-              }
-            }
-            coordMap <- coordMap[coordMap$x != x1 | coordMap$y != y1,];
+            thisR <- getStochRound(getEffectiveR(df, thisR0));
+            effectiveNaughtRatio = thisR/thisR0;
+            copy[copy$status == 0,][1:thisR0,]$status = sample(1:2, thisR0, replace = TRUE, prob=c(effectiveNaughtRatio, (1 - effectiveNaughtRatio)));
             copy[copy$x == x1 & copy$y == y1,]$status = sample(3:4, 1, prob=c(1-CFR, CFR));
           }
         }
