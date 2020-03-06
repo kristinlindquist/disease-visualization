@@ -74,9 +74,11 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
           if (df[df$x == x1 & df$y == y1,]$status == 1) {
             thisR0 <- getStochRound(R0);
             thisR <- getStochRound(getEffectiveR(df, thisR0));
-            effectiveNaughtRatio = thisR/thisR0;
-            copy[copy$status == 0,][1:thisR0,]$status = sample(1:2, thisR0, replace = TRUE, prob=c(effectiveNaughtRatio, (1 - effectiveNaughtRatio)));
-            copy[copy$x == x1 & copy$y == y1,]$status = sample(3:4, 1, prob=c(1-CFR, CFR));
+            if (thisR0 > 0) {
+              effectiveNaughtRatio = thisR/thisR0;
+              copy[copy$status == 0,][1:thisR0,]$status = sample(1:2, thisR0, replace = TRUE, prob=c(effectiveNaughtRatio, (1 - effectiveNaughtRatio)));
+              copy[copy$x == x1 & copy$y == y1,]$status = sample(3:4, 1, prob=c(1-CFR, CFR));
+            }
           }
         }
       }
@@ -106,7 +108,7 @@ apply(
   toRender,
   1,
   function(d) pandemic(
-    size=30,
+    size=31,
     steps=15,
     file=(d[['fileName']]),
     name=(d[['name']]),
