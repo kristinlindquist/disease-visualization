@@ -1,4 +1,3 @@
-library('plot.matrix');
 library('animation');
 library('spatstat');
 library('sp');
