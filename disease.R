@@ -3,11 +3,40 @@ library('animation');
 library('spatstat');
 library('sp');
 library('ggplot2');
+library('rootSolve');
+
+S0 <- 0.9;
+initialInfected = 9;
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
-# ... assumes "susceptible depletion" kicking in
-getRt <- function(N, stillSusceptible, R0) ((N - stillSusceptible)/N) * R0;
-getEffectiveR <- function(df, R0) round(getRt(nrow(df), nrow(subset(df, status != 0)), R0), 2);
+# assumes "susceptible depletion" kicking in
+getR <- function(N, stillSusceptible, R0) (stillSusceptible/N) * R0;
+getEffectiveR <- function(df, R0) round(getR(nrow(df), nrow(subset(df, status == 0)) * S0, R0), 2);
+
+# https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7
+# "final size relation" https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3506030/
+# s∞ = S(0)e^[–R0(1–s∞)]
+getFinalUninfectedSusceptible <- function(R0) {
+  return(multiroot(
+    f = function(R0, Sinf) return(Sinf - (S0 * exp(-R0 * (1 - Sinf)))),
+    start = 0,
+    positive = TRUE,
+    R0 = R0
+  )$root);
+}
+
+getEffective0Ratio <- function(R0, R) if (R0 > 0) R/R0 else 0;
+
+getPermUninfected <- function(R0, R, N) {
+  return((getEffective0Ratio(R0, R) * (getFinalUninfectedSusceptible(R0) + (1 - S0))));
+}
+
+getInfectionProbabilities <- function(R0t, Rt, R0, R, N) {
+  return(c(
+    getEffective0Ratio(R0t, Rt), # infected
+    getPermUninfected(R0, R, N) * (1 - getEffective0Ratio(R0t, Rt)) # perm uninfected
+  ));
+}
 
 getColor = function(status) {
   # 0 - unexposed
@@ -25,7 +54,9 @@ getColor = function(status) {
   );
 }
 
-getColors = function(statuses) lapply(statuses, function(s) getColor(s));
+getColors <- function(statuses) lapply(statuses, function(s) getColor(s));
+
+getDotSize <- function(size) 600 / (size * 4);
 
 # http://coleoguy.blogspot.com/2016/04/stochasticprobabilistic-rounding.html
 getStochRound <- function(x) {
@@ -40,22 +71,17 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
   df[df$x == ceiling(size/2) & df$y == ceiling(size/2),]$status = 1;
   df$distance <- spDistsN1(as.matrix(df[c("x", "y")]), c(ceiling(size/2), ceiling(size/2)));
   df <- df[order(df$distance),];
+  df[1:initialInfected,]$status <- 1;
   cfrString = paste(CFR*100, '%', sep='');
+  finalR <- getEffectiveR(df, R0);
   saveGIF({
     for (i in 1:steps) {
+      R <- getEffectiveR(df, R0);
       print(ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
-        geom_point(color=getColors(df$status), size = 5) +
+        geom_point(color=getColors(df$status), size = getDotSize(size)) +
         labs(
-          subtitle=paste(name),
-          caption=paste(
-            'R0=',
-            R0,
-            '   R=',
-            getEffectiveR(df, R0),
-            '   CFR=',
-            cfrString,
-            sep=''
-          )
+          title=name,
+          subtitle=paste('R0=', R0, ', R=', R, ', CFR=', cfrString, sep='')
         ) +
         theme(
           axis.title = element_blank(),
@@ -63,25 +89,31 @@ pandemic <- function(size, steps, filename, name, R0, CFR) {
           axis.text.y = element_blank(),
           axis.ticks = element_blank(),
           panel.background = element_blank(),
-          plot.caption = element_text(colour = 'gray10', family='mono', hjust = 0.5, size=20, vjust = 0),
-          plot.subtitle = element_text(colour = 'gray20', family='mono', hjust = 0.5, size=30),
-          plot.margin=unit(c(1.2,1,1,1.2), "cm")
+          plot.title = element_text(colour = 'gray10', family='mono', hjust = 0.5, size=35, vjust = 0),
+          plot.subtitle = element_text(colour = 'gray10', family='mono', hjust = 0.5, size=20, vjust = 0),
+          plot.margin=unit(c(1.1, 0.25, 1, 0.25), "cm")
         )
       );
       copy <- df;
-      for (x1 in 1:size) {
-        for (y1 in 1:size) {
-          if (df[df$x == x1 & df$y == y1,]$status == 1) {
-            thisR0 <- getStochRound(R0);
-            thisR <- getStochRound(getEffectiveR(df, thisR0));
-            if (thisR0 > 0) {
-              effectiveNaughtRatio = thisR/thisR0;
-              copy[copy$status == 0,][1:thisR0,]$status = sample(1:2, thisR0, replace = TRUE, prob=c(effectiveNaughtRatio, (1 - effectiveNaughtRatio)));
-              copy[copy$x == x1 & copy$y == y1,]$status = sample(3:4, 1, prob=c(1-CFR, CFR));
-            }
+      apply(df, 1, function(d) {
+        if (d[['status']] == 1) {
+          R0t <- getStochRound(R0);
+          Rt <- getStochRound(getEffectiveR(df, R0t));
+          prob = getInfectionProbabilities(R0t, Rt, R0, R, size^2);
+          # copy[is.na(copy)] <- 0;
+          maxLength = min(R0t, length(copy[copy$status == 0,][,1]));
+
+          if (max(prob) > 0 && maxLength > 0) {
+            copy[copy$status == 0,][1:maxLength,]$status <<- sample(
+              1:2,
+              maxLength,
+              replace = TRUE,
+              prob
+            );
           }
+          copy[copy$x == d[['x']] & copy$y == d[['y']],]$status <<- sample(3:4, 1, prob=c(1-CFR, CFR));
         }
-      }
+      });
       df <- copy;
     }
   }, movie.name=filename, interval = 2, ani.width = 600, ani.height = 600);
@@ -105,7 +137,7 @@ toRender <- data.frame(
 );
 
 apply(
-  toRender,
+  toRender[5,],
   1,
   function(d) pandemic(
     size=31,
