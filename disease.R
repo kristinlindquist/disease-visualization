@@ -6,7 +6,7 @@ library('ggplot2');
 library('rootSolve');
 
 S0 <- 0.9;
-initialInfected = 9;
+initialInfected = 5;
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
 # assumes "susceptible depletion" kicking in
@@ -137,7 +137,7 @@ toRender <- data.frame(
 );
 
 apply(
-  toRender[5,],
+  toRender[4,],
   1,
   function(d) pandemic(
     size=31,
