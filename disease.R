@@ -137,7 +137,7 @@ toRender <- data.frame(
 );
 
 apply(
-  toRender[4,],
+  toRender,
   1,
   function(d) pandemic(
     size=31,
