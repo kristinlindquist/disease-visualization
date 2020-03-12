@@ -7,6 +7,7 @@ library('gridExtra');
 library('dplyr');
 library('reshape2')
 
+relativeHeight <- 0.85;
 S0 <- 0.99;
 initialInfected = 1;
 
@@ -28,16 +29,13 @@ getFinalUninfectedSusceptible <- function(R0) {
 }
 
 getEffective0Ratio <- function(R0, R) if (R0 > 0) R/R0 else 0;
-
-getPermUninfected <- function(R0, R, N) {
-  return((getEffective0Ratio(R0, R) * (getFinalUninfectedSusceptible(R0) + (1 - S0))));
-}
+getPermUninfected <- function(R0, R, N) getEffective0Ratio(R0, R) * (getFinalUninfectedSusceptible(R0) + (1 - S0));
 
 getInfectionProbabilities <- function(R0t, Rt, R0, R, N) {
-  return(c(
+  c(
     getEffective0Ratio(R0t, Rt), # infected
     getPermUninfected(R0, R, N) * (1 - getEffective0Ratio(R0t, Rt)) # perm uninfected
-  ));
+  )
 }
 
 getOrder = function(status) {
@@ -61,7 +59,7 @@ getColor = function(status) {
 }
 
 getColors <- function(statuses) lapply(statuses, function(s) getColor(s));
-getDotSize <- function(size, height) (height * 0.9) / (size * 4);
+getDotSize <- function(size, height) (height * relativeHeight) / (size * 4);
 
 # http://coleoguy.blogspot.com/2016/04/stochasticprobabilistic-rounding.html
 getStochRound <- function(x) {
@@ -104,7 +102,7 @@ getHisto <- function(df) {
   )
 }
 
-epidemic <- function(size, generations, filename, name, R0, CFR, width = 650) {
+epidemic <- function(size, generations, filename, name, R0, CFR, width = 650, interval = 2) {
   height <- width;
   df <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size, status = 0))));
   df[df$x == ceiling(size / 2) & df$y == ceiling(size / 2),]$status = 1;
@@ -121,7 +119,7 @@ epidemic <- function(size, generations, filename, name, R0, CFR, width = 650) {
       print(grid.arrange(
         getDots(df, size, i, name, R0, CFR, height),
         getHisto(df_histogram),
-        heights=c(height * 0.9, height * 0.1)
+        heights=c(height * relativeHeight, height * (1 - relativeHeight))
       ));
       
       copy <- df;
@@ -146,7 +144,7 @@ epidemic <- function(size, generations, filename, name, R0, CFR, width = 650) {
       copy$status <- apply(copy, 1, function(e) ifelse(between(e[['status']], 3.0, 3.9), e[['status']] + 0.1, e[['status']]));
       df <- copy;
     }
-  }, movie.name=filename, interval = 2, ani.width = width, ani.height = height);
+  }, movie.name=filename, interval = interval, ani.width = width, ani.height = height);
 }
 
 epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, width) {
@@ -188,18 +186,19 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 # );
 
 renderFromR0 <- data.frame(
-   name = c('Covid-19 - Low', 'Covid-19 - Medium', 'Covid-19 - High'),
-   fileName = c('Covid-19-low.gif', 'Covid-19-medium.gif', 'Covid-19-high.gif'),
-   CFR = c(0.01, 0.023, 0.034),
-   R0 = c(1.4, 2.5, 3.28)
+   name = c('Covid-19 - Low', 'Covid-19 - High'),
+   fileName = c('Covid-19-low.gif', 'Covid-19-high.gif'),
+   CFR = c(0.01, 0.034),
+   R0 = c(1.4, 3.28)
 );
 
 apply(
   renderFromR0,
   1,
   function(d) epidemic(
-    size=31,
-    generations=15,
+    size=51,
+    generations=35,
+    interval=1,
     width=650,
     file=(d[['fileName']]),
     name=(d[['name']]),
