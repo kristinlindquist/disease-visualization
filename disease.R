@@ -3,8 +3,11 @@ library('spatstat');
 library('sp');
 library('ggplot2');
 library('rootSolve');
+library('gridExtra');
+library('dplyr');
+library('reshape2')
 
-S0 <- 0.95;
+S0 <- 0.99;
 initialInfected = 1;
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
@@ -37,24 +40,28 @@ getInfectionProbabilities <- function(R0t, Rt, R0, R, N) {
   ));
 }
 
+getOrder = function(status) {
+  if (status == 1 | round(status, 0) == 3) 3
+  else if (status == 0 | status == 2) 1
+  else if (floor(status) == 3) 2
+  else if (status == 4) 4
+  else 1
+}
+
 getColor = function(status) {
-  # 0 - unexposed
-  # 1 - infected
-  # 2 - non-infected
-  # 3 - undead
-  # 4 - dead
   return(
-    if (status == 0) 'ghostwhite'
-    else if (status == 1) 'firebrick3'
-    else if (status == 2) 'ghostwhite'
-    else if (status == 3) 'azure3'
-    else if (status == 4) 'gray10'
+    if (status == 0) 'ghostwhite' # 0 - unexposed
+    else if (status == 1 ) 'firebrick1' # 1 - infected
+    else if (round(status, 0) == 3) 'firebrick' # recovering
+    else if (status == 2) 'ghostwhite' # 2 - non-infected
+    else if (floor(status) == 3) 'azure3' # 3 - undead
+    else if (status == 4) 'gray10' # 4 - dead
     else 'purple'
   );
 }
 
 getColors <- function(statuses) lapply(statuses, function(s) getColor(s));
-getDotSize <- function(size, width) width / (size * 4);
+getDotSize <- function(size, height) (height * 0.9) / (size * 4);
 
 # http://coleoguy.blogspot.com/2016/04/stochasticprobabilistic-rounding.html
 getStochRound <- function(x) {
@@ -64,33 +71,59 @@ getStochRound <- function(x) {
   trunc(x) + adj;
 }
 
-epidemic <- function(size, generations, filename, name, R0, CFR, width = 600) {
+getDots <- function(df, size, generation, name, R0, CFR, height) {
+  ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
+    geom_point(color=getColors(df$status), size = getDotSize(size, height)) +
+    labs(
+      title=name,
+      subtitle=paste('Generation ', generation, ', R0=', R0, ', CFR=', CFR * 100, '%', sep='')
+    ) +
+    theme(
+      axis.title = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks = element_blank(),
+      panel.background = element_blank(),
+      plot.title = element_text(colour = 'gray10', family='Anonymous Pro', hjust = 0.5, size=35, vjust = 0),
+      plot.subtitle = element_text(colour = 'gray10', family='Anonymous Pro', hjust = 0.5, size=25, vjust = 0),
+      plot.margin=unit(c(1.1, 0.25, 0.5, 0.25), "cm")
+    );
+}
+
+getHisto <- function(df) {
+  df <- df[order(df$generation),][rev(order(apply(df, 1, function(e) getOrder(e[['status']])))),];
+  ggplot(df, aes(x=generation, y=1, fill=getColors(df$status))) +
+  geom_bar(stat = 'identity') +
+  theme(
+    axis.title = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    legend.position = 'none',
+    panel.background = element_blank()
+  )
+}
+
+epidemic <- function(size, generations, filename, name, R0, CFR, width = 650) {
+  height <- width;
   df <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size, status = 0))));
-  df[df$x == ceiling(size/2) & df$y == ceiling(size/2),]$status = 1;
-  df$distance <- spDistsN1(as.matrix(df[c("x", "y")]), c(ceiling(size/2), ceiling(size/2)));
+  df[df$x == ceiling(size / 2) & df$y == ceiling(size / 2),]$status = 1;
+  df$distance <- spDistsN1(as.matrix(df[c("x", "y")]), c(ceiling(size / 2), ceiling(size / 2)));
   df <- df[order(df$distance),];
   df[1:initialInfected,]$status <- 1;
   finalR <- getEffectiveR(df, R0);
+  df_histogram <- cbind(df, generation=0);
+
   saveGIF({
     for (i in 1:generations) {
       R <- getEffectiveR(df, R0);
-      print(ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
-        geom_point(color=getColors(df$status), size = getDotSize(size, width)) +
-        labs(
-          title=name,
-          subtitle=paste('Generation ', i, ', R0=', R0, ', CFR=', CFR*100, '%', sep='')
-        ) +
-        theme(
-          axis.title = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          panel.background = element_blank(),
-          plot.title = element_text(colour = 'gray10', family='Anonymous Pro', hjust = 0.5, size=35, vjust = 0),
-          plot.subtitle = element_text(colour = 'gray10', family='Anonymous Pro', hjust = 0.5, size=25, vjust = 0),
-          plot.margin=unit(c(1.1, 0.25, 1, 0.25), "cm")
-        )
-      );
+      df_histogram <- rbind(df_histogram, cbind(df, generation=i));
+      print(grid.arrange(
+        getDots(df, size, i, name, R0, CFR, height),
+        getHisto(df_histogram),
+        heights=c(height * 0.9, height * 0.1)
+      ));
+      
       copy <- df;
       apply(df, 1, function(d) {
         if (d[['status']] == 1) {
@@ -107,12 +140,13 @@ epidemic <- function(size, generations, filename, name, R0, CFR, width = 600) {
               prob
             );
           }
-          copy[copy$x == d[['x']] & copy$y == d[['y']],]$status <<- sample(3:4, 1, prob=c(1-CFR, CFR));
+          copy[copy$x == d[['x']] & copy$y == d[['y']],]$status <<- sample(3:4, 1, prob=c(1 - CFR, CFR));
         }
       });
+      copy$status <- apply(copy, 1, function(e) ifelse(between(e[['status']], 3.0, 3.9), e[['status']] + 0.1, e[['status']]));
       df <- copy;
     }
-  }, movie.name=filename, interval = 2, ani.width = width, ani.height = width);
+  }, movie.name=filename, interval = 2, ani.width = width, ani.height = height);
 }
 
 epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, width) {
@@ -146,27 +180,27 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 # measles CFR https://www.cdc.gov/vaccines/pubs/pinkbook/downloads/meas.pdf
 # Mumps CFR https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates
 # Rubella CFR (infants & in utero) https://www.cdc.gov/rubella/about/in-the-us.html
-renderFromR0 <- data.frame(
-  name = c('MERS', 'Influenza', 'Covid-19', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
-  fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
-  CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
-  R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
-);
-
 # renderFromR0 <- data.frame(
-#    name = c('Covid-19 - Low', 'Covid-19 - Medium', 'Covid-19 - High'),
-#    fileName = c('Covid-19-low.gif', 'Covid-19-medium.gif', 'Covid-19-high.gif'),
-#    CFR = c(0.01, 0.023, 0.034),
-#    R0 = c(1.4, 2.5, 3.28)
+#   name = c('MERS', 'Influenza', 'Covid-19', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
+#   fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
+#   CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
+#   R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
 # );
 
+renderFromR0 <- data.frame(
+   name = c('Covid-19 - Low', 'Covid-19 - Medium', 'Covid-19 - High'),
+   fileName = c('Covid-19-low.gif', 'Covid-19-medium.gif', 'Covid-19-high.gif'),
+   CFR = c(0.01, 0.023, 0.034),
+   R0 = c(1.4, 2.5, 3.28)
+);
+
 apply(
-  renderFromR0[2,],
+  renderFromR0,
   1,
   function(d) epidemic(
     size=31,
     generations=15,
-    width=600,
+    width=650,
     file=(d[['fileName']]),
     name=(d[['name']]),
     R0=(as.numeric(d[['R0']])),
