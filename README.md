@@ -1,7 +1,7 @@
 # A simple disease visualization
-A simple disease spread visualization based on R0, CFR and the final size relation.
+A simple disease spread visualization based on R0, CFR, serial interval and the final size relation.
 
-Assumes [susceptible depletion](https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659) kicks in using the final size relation s∞ = S(0)e^[–R0(1–s∞)] [[1](https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7) [2](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3506030/)], homogeneous contact & transmission rates (whereas better models consider heterogeneous contact & transmission rates, e.g. [[1](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4808916/), [2](https://www.uvm.edu/pdodds/research/papers/years/2005/watts2005a.pdf), [3](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0120701)]).
+Assumes [susceptible depletion](https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659) kicks in using the final size relation s∞ = S(0)e^[–R0(1–s∞)] [[1](https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7) [2](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3506030/)], homogeneous contact & transmission rates (whereas better models consider heterogeneous contact & transmission rates, e.g. [[1](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4808916/), [2](https://www.uvm.edu/pdodds/research/papers/years/2005/watts2005a.pdf), [3](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0120701)]) and that [serial interval == generation interval](https://nccid.ca/publications/glossary-terms-infectious-disease-modelling-proposal-consistent-language/).
 
 ## R0s
 * [Various](https://en.wikipedia.org/wiki/Basic_reproduction_number)
