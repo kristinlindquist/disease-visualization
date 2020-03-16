@@ -13,7 +13,7 @@ initialInfected = 1;
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
 # assumes "susceptible depletion" kicking in
-getR <- function(N, stillSusceptible, R0) (stillSusceptible/N) * R0;
+getR <- function(N, stillSusceptible, R0) (stillSusceptible / N) * R0;
 getEffectiveR <- function(df, R0) round(getR(nrow(df), nrow(subset(df, status == 0)) * S0, R0), 2);
 
 # https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7
@@ -34,7 +34,7 @@ getPermUninfected <- function(R0, R, N) getEffective0Ratio(R0, R) * (getFinalUni
 getInfectionProbabilities <- function(R0t, Rt, R0, R, N) {
   c(
     getEffective0Ratio(R0t, Rt), # infected
-    getPermUninfected(R0, R, N) * (1 - getEffective0Ratio(R0t, Rt)) # perm uninfected
+    getPermUninfected(R0, R, N) * (1 - getEffective0Ratio(R0t, Rt)) # uninfected
   )
 }
 
@@ -50,7 +50,7 @@ getColor = function(status) {
   return(
     if (status == 0) 'ghostwhite' # 0 - unexposed
     else if (status == 1 ) 'lightsalmon' # 1 - infected
-    else if (round(status, 0) == 3) 'salmon3' # recovering
+    else if (floor(status) == 3 & status < 3.2) 'salmon3' # recovering for 2 generations
     else if (status == 2) 'ghostwhite' # 2 - non-infected
     else if (floor(status) == 3) 'azure3' # 3 - undead
     else if (status == 4) 'gray10' # 4 - dead
@@ -69,12 +69,12 @@ getStochRound <- function(x) {
   trunc(x) + adj;
 }
 
-getDots <- function(df, size, generation, name, R0, CFR, height) {
+getDots <- function(df, size, name, R0, CFR, days, height) {
   ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
     geom_point(color=getColors(df$status), size = getDotSize(size, height)) +
     labs(
       title=name,
-      subtitle=paste('Generation ', generation, ', R0=', R0, ', CFR=', CFR * 100, '%', sep='')
+      subtitle=paste('Day ', days, ', R0=', R0, ', CFR=', CFR * 100, '%', sep='')
     ) +
     theme(
       axis.title = element_blank(),
@@ -90,7 +90,7 @@ getDots <- function(df, size, generation, name, R0, CFR, height) {
 
 getHisto <- function(df) {
   df <- df[order(df$generation),][rev(order(apply(df, 1, function(e) getOrder(e[['status']])))),];
-  ggplot(df, aes(x=generation, y=1, fill=getColors(df$status))) +
+  ggplot(df, aes(x=generation + 1, y=1, fill=getColors(df$status))) +
   geom_bar(stat = 'identity') +
   theme(
     axis.title = element_blank(),
@@ -102,7 +102,9 @@ getHisto <- function(df) {
   )
 }
 
-epidemic <- function(size, generations, filename, name, R0, CFR, width = 650, interval = 2) {
+getDays <- function(generation, serialInterval) round(generation * serialInterval, 0);
+
+epidemic <- function(size, generations, filename, name, R0, CFR, serialInterval = 5, width = 650, interval = 2) {
   height <- width;
   df <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size, status = 0))));
   df[df$x == ceiling(size / 2) & df$y == ceiling(size / 2),]$status = 1;
@@ -110,14 +112,14 @@ epidemic <- function(size, generations, filename, name, R0, CFR, width = 650, in
   df <- df[order(df$distance),];
   df[1:initialInfected,]$status <- 1;
   finalR <- getEffectiveR(df, R0);
-  df_histogram <- cbind(df, generation=0);
+  # df_histogram <- cbind(df, generation=0);
 
   saveGIF({
-    for (i in 1:generations) {
+    for (i in 0:generations) {
       R <- getEffectiveR(df, R0);
-      df_histogram <- rbind(df_histogram, cbind(df, generation=i));
+      df_histogram <- if (exists("df_histogram")) rbind(df_histogram, cbind(df, generation=i)) else cbind(df, generation=i);
       print(grid.arrange(
-        getDots(df, size, i, name, R0, CFR, height),
+        getDots(df, size, name, R0, CFR, getDays(i, serialInterval), height),
         getHisto(df_histogram),
         heights=c(height * relativeHeight, height * (1 - relativeHeight))
       ));
@@ -147,20 +149,20 @@ epidemic <- function(size, generations, filename, name, R0, CFR, width = 650, in
   }, movie.name=filename, interval = interval, ani.width = width, ani.height = height);
 }
 
-epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, width) {
-  # β == transmission rate per infectious individual (e.g. 1.94 https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
-  # γ == recovery rate; 1/γ == infectious period (e.g. 1/γ = 1.61 days (seems low??) https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
+epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, serialInterval, width) {
+  # β == transmission rate per infectious individua
+  # γ == recovery rate; 1/γ == infectious period
   R0 <- round(β / γ, 2);
-  epidemic(size, generations, filename, name, R0, CFR, width);
+  epidemic(size, generations, filename, name, R0, CFR, serialInterval, width);
 }
 
-epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR, width) {
+epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR, serialInterval, width) {
   # τ = infection per contact
   # c = contact rate
   # β = τ * c = contact rate * infection per contact
   β <- c * τ;
   R0 <- round(β / γ, 2);
-  epidemic(size, generations, filename, name, R0, CFR, width);
+  epidemic(size, generations, filename, name, R0, CFR, serialInterval, width);
 }
 
 # R0s from https://en.wikipedia.org/wiki/Basic_reproduction_number
@@ -179,9 +181,19 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 # measles CFR https://www.cdc.gov/vaccines/pubs/pinkbook/downloads/meas.pdf
 # Mumps CFR https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates
 # Rubella CFR (infants & in utero) https://www.cdc.gov/rubella/about/in-the-us.html
+# MERS Serial (13 days) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5930778/
+# flu serial (3 days) https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200306-sitrep-46-covid-19.pdf?sfvrsn=96b04adf_2
+# Covid-19 serial (5-6 days) https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200306-sitrep-46-covid-19.pdf?sfvrsn=96b04adf_2
+# Ebola serial (15.3 days) https://www.sciencedirect.com/science/article/pii/S1755436515000341
+# SARS serial interval (8.4 days) https://dash.harvard.edu/bitstream/handle/1/25620506/Transmission%20dynamics%20and%20control%20of%20severe%20acute%20respiratory%20syndrome.pdf?sequence=1
+# Mumps serial interval (20 days) https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5223546/
+# Rubella serial interval (18 days) https://academic.oup.com/aje/article/180/9/865/2739204
+# Smallpox serial interval (18 days) https://academic.oup.com/aje/article/180/9/865/2739204
+# Measles serial interval (12 days) https://academic.oup.com/aje/article/180/9/865/2739204
 # renderFromR0 <- data.frame(
 #   name = c('MERS', 'Influenza', 'Covid-19', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
 #   fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
+#   serialInterval = c(13, 3, 5, 15, 8, 20, 18, 18, 12),
 #   CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
 #   R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
 # );
@@ -189,12 +201,13 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 renderFromR0 <- data.frame(
    name = c('Covid-19 - Low Estimates', 'Covid-19 - High Estimates', 'Covid-19 - Baseline', 'Covid-19 - R = ¾ R0', 'Covid-19 - R = 62.5% R0', 'Covid-19 - R = ½ R0'),
    fileName = c('Covid-19-low.gif', 'Covid-19-high.gif', 'Covid-19-mid.gif', 'Covid-19-75.gif', 'Covid-19-625.gif', 'Covid-19-half.gif'),
+   serialInterval = c(5, 5, 5, 5, 5, 5),
    CFR = c(0.0094, 0.034, 0.023, 0.01, 0.01, 0.005),
    R0 = c(1.4, 3.28, 2.5, 1.875, 1.56, 1.25)
 );
 
 apply(
-  renderFromR0[c(5),],
+  renderFromR0[c(3, 4),],
   1,
   function(d) epidemic(
     size=51,
