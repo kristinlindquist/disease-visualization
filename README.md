@@ -21,4 +21,4 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 * [Smallpox CFR](https://en.wikipedia.org/wiki/Smallpox)
 * [Measles CFR](https://www.cdc.gov/vaccines/pubs/pinkbook/downloads/meas.pdf)
 * [Mumps CFR](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
-* [Rubella CFR (infants & in utero)](https://www.cdc.gov/rubella/about/in-the-us.html)
+* [Rubella CFR (fatalities almost entirely infants & in utero)](https://www.cdc.gov/rubella/about/in-the-us.html)
