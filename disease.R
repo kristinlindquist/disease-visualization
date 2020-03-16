@@ -74,7 +74,7 @@ getDots <- function(df, size, generation, name, R0, CFR, height) {
     geom_point(color=getColors(df$status), size = getDotSize(size, height)) +
     labs(
       title=name,
-      subtitle=paste('Generation ', generation, ', R=', R0, ', CFR=', CFR * 100, '%', sep='')
+      subtitle=paste('Generation ', generation, ', R0=', R0, ', CFR=', CFR * 100, '%', sep='')
     ) +
     theme(
       axis.title = element_blank(),
