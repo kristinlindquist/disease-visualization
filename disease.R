@@ -49,8 +49,8 @@ getOrder = function(status) {
 getColor = function(status) {
   return(
     if (status == 0) 'ghostwhite' # 0 - unexposed
-    else if (status == 1 ) 'firebrick1' # 1 - infected
-    else if (round(status, 0) == 3) 'firebrick' # recovering
+    else if (status == 1 ) 'lightsalmon' # 1 - infected
+    else if (round(status, 0) == 3) 'salmon3' # recovering
     else if (status == 2) 'ghostwhite' # 2 - non-infected
     else if (floor(status) == 3) 'azure3' # 3 - undead
     else if (status == 4) 'gray10' # 4 - dead
@@ -74,7 +74,7 @@ getDots <- function(df, size, generation, name, R0, CFR, height) {
     geom_point(color=getColors(df$status), size = getDotSize(size, height)) +
     labs(
       title=name,
-      subtitle=paste('Generation ', generation, ', R0=', R0, ', CFR=', CFR * 100, '%', sep='')
+      subtitle=paste('Generation ', generation, ', R=', R0, ', CFR=', CFR * 100, '%', sep='')
     ) +
     theme(
       axis.title = element_blank(),
@@ -149,7 +149,7 @@ epidemic <- function(size, generations, filename, name, R0, CFR, width = 650, in
 
 epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, width) {
   # β == transmission rate per infectious individual (e.g. 1.94 https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
-  # γ == recovery rate; 1/γ == infectious period (e.g. 1/γ = 1.61 days https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
+  # γ == recovery rate; 1/γ == infectious period (e.g. 1/γ = 1.61 days (seems low??) https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
   R0 <- round(β / γ, 2);
   epidemic(size, generations, filename, name, R0, CFR, width);
 }
@@ -157,7 +157,7 @@ epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, wid
 epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR, width) {
   # τ = infection per contact
   # c = contact rate
-  # β = contact rate * risk of infection
+  # β = τ * c = contact rate * infection per contact
   β <- c * τ;
   R0 <- round(β / γ, 2);
   epidemic(size, generations, filename, name, R0, CFR, width);
@@ -171,6 +171,7 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 # CFR Covid-19 highest (3.4%) https://www.who.int/dg/speeches/detail/who-director-general-s-opening-remarks-at-the-media-briefing-on-covid-19---3-march-2020
 # CFR Covid-19 higher (2.3%) https://ourworldindata.org/coronavirus
 # IFR Covid-19 (1.6%) https://www.medrxiv.org/content/10.1101/2020.03.04.20031104v1.full.pdf
+# IFR Covid-19 (0.94%) https://institutefordiseasemodeling.github.io/nCoV-public/analyses/first_adjusted_mortality_estimates_and_risk_assessment/2019-nCoV-preliminary_age_and_time_adjusted_mortality_rates_and_pandemic_risk_assessment.html
 # IFR Covid-19 low (0.3%–1%) https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200219-sitrep-30-covid-19.pdf?sfvrsn=3346b04f_2
 # Ebola, SARS and MERS CFR https://ourworldindata.org/coronavirus
 # Flu CFR https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates
@@ -186,19 +187,19 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 # );
 
 renderFromR0 <- data.frame(
-   name = c('Covid-19 - Low', 'Covid-19 - High'),
-   fileName = c('Covid-19-low.gif', 'Covid-19-high.gif'),
-   CFR = c(0.01, 0.034),
-   R0 = c(1.4, 3.28)
+   name = c('Covid-19 - Low Estimates', 'Covid-19 - High Estimates', 'Covid-19 - Baseline', 'Covid-19 - R = ¾ R0', 'Covid-19 - R = 62.5% R0', 'Covid-19 - R = ½ R0'),
+   fileName = c('Covid-19-low.gif', 'Covid-19-high.gif', 'Covid-19-mid.gif', 'Covid-19-75.gif', 'Covid-19-625.gif', 'Covid-19-half.gif'),
+   CFR = c(0.0094, 0.034, 0.023, 0.01, 0.01, 0.005),
+   R0 = c(1.4, 3.28, 2.5, 1.875, 1.56, 1.25)
 );
 
 apply(
-  renderFromR0,
+  renderFromR0[c(5),],
   1,
   function(d) epidemic(
     size=51,
-    generations=35,
-    interval=1,
+    generations=25,
+    interval=1.0,
     width=650,
     file=(d[['fileName']]),
     name=(d[['name']]),
@@ -206,26 +207,3 @@ apply(
     CFR=(as.numeric(d[['CFR']]))
   )
 )
-
-renderFromβγ <- data.frame(
-  name = c('Covid-19', 'Covid-19 Hypothetical - ¾ β', 'Covid-19 Hypothetical - ½ β', 'Covid-19 Hypothetical...'),
-  fileName = c('Covid-19-1.gif', 'Covid-19-2.gif', 'Covid-19-3.gif', 'Covid-19-4.gif'),
-  CFR = c(0.023, 0.023, 0.023, 0.023),
-  β = c(1.6, 1.2, 0.8, (1.6 * 0.16)),
-  γ = c(1/1.61, 1/1.61, 1/1.61, 1/1.61)
-);
-
-# apply(
-#   renderFromβγ[4,],
-#   1,
-#   function(d) epidemicFromβγ(
-#     size=101,
-#     generations=30,
-#     width=800,
-#     file=(d[['fileName']]),
-#     name=(d[['name']]),
-#     CFR=(as.numeric(d[['CFR']])),
-#     β=(as.numeric(d[['β']])),
-#     γ=(as.numeric(d[['γ']]))
-#   )
-# )
