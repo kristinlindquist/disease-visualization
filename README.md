@@ -6,7 +6,7 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 ## R0s
 * [Various](https://en.wikipedia.org/wiki/Basic_reproduction_number)
 * [SARS (1.77-1.85)](https://www.biorxiv.org/content/10.1101/2020.01.25.919787v1)
-* [Seasonal Influenza](https://www.ncbi.nlm.nih.gov/pubmed/19545404)
+* [Seasonal Influenza (1.3)](https://www.ncbi.nlm.nih.gov/pubmed/19545404)
 * [Covid-19 (1.4-2.5)](https://www.who.int/news-room/detail/23-01-2020-statement-on-the-meeting-of-the-international-health-regulations-(2005)-emergency-committee-regarding-the-outbreak-of-novel-coronavirus-(2019-ncov))
 * [Covid-19 high (mean 3.28, median 2.79)](https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
 
