@@ -9,7 +9,8 @@ library('reshape2')
 
 relativeHeight <- 0.85;
 S0 <- 1.0;
-initialInfected = 1;
+initialInfected <- 1;
+standardInterval <- 5;
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
 # assumes "susceptible depletion" kicking in
@@ -198,26 +199,26 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 # Rubella serial interval (18 days) https://academic.oup.com/aje/article/180/9/865/2739204
 # Smallpox serial interval (18 days) https://academic.oup.com/aje/article/180/9/865/2739204
 # Measles serial interval (12 days) https://academic.oup.com/aje/article/180/9/865/2739204
-# renderFromR0 <- data.frame(
-#   name = c('MERS', 'Influenza', 'Covid-19 (Unmitigated)', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
-#   fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
-#   serialInterval = c(13, 3, 5, 15, 8, 20, 18, 18, 12),
-#   recoveryInterval = c(14, 14, 14, 14, 14, 14, 14, 14, 14),
-#   CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
-#   R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
-# );
-
 renderFromR0 <- data.frame(
-   name = c('Covid-19 (Low Estimates)', 'Covid-19 (High Estimates)', 'Covid-19 (Unmitigated)', 'Covid-19 (R = ¾ R0)', 'Covid-19 (R = 62.5% R0)', 'Covid-19 (R = ½ R0)'),
-   fileName = c('Covid-19-low.gif', 'Covid-19-high.gif', 'Covid-19-mid.gif', 'Covid-19-75.gif', 'Covid-19-625.gif', 'Covid-19-half.gif'),
-   serialInterval = c(5, 5, 5, 5, 5, 5),
-   recoveryInterval = c(14, 14, 14, 14, 14, 14),
-   CFR = c(0.0094, 0.034, 0.023, 0.01, 0.01, 0.005),
-   R0 = c(1.4, 3.28, 2.5, 1.875, 1.56, 1.25)
+  name = c('MERS', 'Influenza', 'Covid-19 (Unmitigated)', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
+  fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
+  serialInterval = c(13, 3, 5, 15, 8, 20, 18, 18, 12),
+  recoveryInterval = c(14, 14, 14, 14, 14, 14, 14, 14, 14),
+  CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
+  R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
 );
 
+# renderFromR0 <- data.frame(
+#    name = c('Covid-19 (Low Estimates)', 'Covid-19 (High Estimates)', 'Covid-19 (Unmitigated)', 'Covid-19 (R = ¾ R0)', 'Covid-19 (R = 62.5% R0)', 'Covid-19 (R = ½ R0)'),
+#    fileName = c('Covid-19-low.gif', 'Covid-19-high.gif', 'Covid-19-mid.gif', 'Covid-19-75.gif', 'Covid-19-625.gif', 'Covid-19-half.gif'),
+#    serialInterval = c(5, 5, 5, 5, 5, 5),
+#    recoveryInterval = c(14, 14, 14, 14, 14, 14),
+#    CFR = c(0.0094, 0.034, 0.023, 0.01, 0.01, 0.005),
+#    R0 = c(1.4, 3.28, 2.5, 1.875, 1.56, 1.25)
+# );
+
 apply(
-  renderFromR0[c(4),],
+  renderFromR0[c(2, 3, 8),],
   1,
   function(d) epidemic(
     size=51,
@@ -227,6 +228,8 @@ apply(
     file=(d[['fileName']]),
     name=(d[['name']]),
     R0=(as.numeric(d[['R0']])),
-    CFR=(as.numeric(d[['CFR']]))
+    CFR=(as.numeric(d[['CFR']])),
+    serialInterval=(as.numeric(d[['serialInterval']])),
+    recoveryInterval=(as.numeric(d[['recoveryInterval']]))
   )
 )
