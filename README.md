@@ -16,12 +16,12 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 * [Covid-19 IFR (1.6%)](https://www.medrxiv.org/content/10.1101/2020.03.04.20031104v1.full.pdf)
 * [Covid-19 IFR (0.94%)](https://institutefordiseasemodeling.github.io/nCoV-public/analyses/first_adjusted_mortality_estimates_and_risk_assessment/2019-nCoV-preliminary_age_and_time_adjusted_mortality_rates_and_pandemic_risk_assessment.html)
 * [Covid-19 IFR low (0.3%–1%)](https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200219-sitrep-30-covid-19.pdf?sfvrsn=3346b04f_2)
-* [Ebola, SARS and MERS CFR](https://ourworldindata.org/coronavirus)
-* [Seasonal Influenza CFR](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
-* [Smallpox CFR](https://en.wikipedia.org/wiki/Smallpox)
-* [Measles CFR](https://www.cdc.gov/vaccines/pubs/pinkbook/downloads/meas.pdf)
-* [Mumps CFR](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
-* [Rubella CFR (fatalities almost entirely infants & in utero)](https://www.cdc.gov/rubella/about/in-the-us.html)
+* [Ebola, SARS and MERS CFR (50%, 10%, 34%)](https://ourworldindata.org/coronavirus)
+* [Seasonal Influenza CFR (0.1%)](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
+* [Smallpox CFR (30%)](https://en.wikipedia.org/wiki/Smallpox)
+* [Measles CFR (0.2%)](https://www.cdc.gov/vaccines/pubs/pinkbook/downloads/meas.pdf)
+* [Mumps CFR (1%)](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
+* [Rubella CFR (0.1% - fatalities almost entirely infants & in utero)](https://www.cdc.gov/rubella/about/in-the-us.html)
 
 ## Serial Interval
 * [MERS (13 days)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5930778/)
