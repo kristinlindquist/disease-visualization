@@ -8,7 +8,7 @@ library('dplyr');
 library('reshape2')
 
 relativeHeight <- 0.85;
-S0 <- 0.99;
+S0 <- 1.0;
 initialInfected = 1;
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
@@ -39,26 +39,25 @@ getInfectionProbabilities <- function(R0t, Rt, R0, R, N) {
 }
 
 getOrder = function(status) {
-  if (status == 1 | round(status, 0) == 3) 3
-  else if (status == 0 | status == 2) 1
-  else if (floor(status) == 3) 2
-  else if (status == 4) 4
-  else 1
+  if (status == 0 | status == 2) 1
+  else if (status == 5) 2
+  else if (status == 1 | floor(status) == 3) 3
+  else 4
 }
 
-getColor = function(status) {
+getColor = function(status, generationsToRecover) {
   return(
     if (status == 0) 'ghostwhite' # 0 - unexposed
-    else if (status == 1 ) 'lightsalmon' # 1 - infected
-    else if (floor(status) == 3 & status < 3.2) 'salmon3' # recovering for 2 generations
+    else if (status == 1) 'lightsalmon' # 1 - infected
     else if (status == 2) 'ghostwhite' # 2 - non-infected
-    else if (floor(status) == 3) 'azure3' # 3 - undead
+    else if (floor(status) == 3) 'salmon3' # recovering
     else if (status == 4) 'gray10' # 4 - dead
+    else if (status == 5) 'azure3' # 5 - recovered
     else 'purple'
   );
 }
 
-getColors <- function(statuses) lapply(statuses, function(s) getColor(s));
+getColors <- function(statuses, generationsToRecover) lapply(statuses, function(s) getColor(s, generationsToRecover));
 getDotSize <- function(size, height) (height * relativeHeight) / (size * 4);
 
 # http://coleoguy.blogspot.com/2016/04/stochasticprobabilistic-rounding.html
@@ -69,9 +68,18 @@ getStochRound <- function(x) {
   trunc(x) + adj;
 }
 
-getDots <- function(df, size, name, R0, CFR, days, height) {
-  ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
-    geom_point(color=getColors(df$status), size = getDotSize(size, height)) +
+getNextStatus <- function(status, serialInterval, recoveryInterval, CFR) {
+  if (between(status, 3.0, 3.9)) {
+    status = status + 0.1;
+    isFinal <- (status > 3 + (getStochRound(recoveryInterval / serialInterval) * 0.1));
+    return(if (isFinal) sample(5:4, 1, prob=c(1 - CFR, CFR)) else status);
+  }
+  return(status);
+}
+
+getDots <- function(df, size, name, R0, CFR, days, generationsToRecover, height) {
+  ggplot(df, aes(x=x, y=y, fill=getColors(df$status, generationsToRecover))) + 
+    geom_point(color=getColors(df$status, generationsToRecover), size = getDotSize(size, height)) +
     labs(
       title=name,
       subtitle=paste('Day ', days, ', R0=', R0, ', CFR=', CFR * 100, '%', sep='')
@@ -88,9 +96,9 @@ getDots <- function(df, size, name, R0, CFR, days, height) {
     );
 }
 
-getHisto <- function(df) {
+getHisto <- function(df, generationsToRecover) {
   df <- df[order(df$generation),][rev(order(apply(df, 1, function(e) getOrder(e[['status']])))),];
-  ggplot(df, aes(x=generation + 1, y=1, fill=getColors(df$status))) +
+  ggplot(df, aes(x=generation + 1, y=1, fill=getColors(df$status, generationsToRecover))) +
   geom_bar(stat = 'identity') +
   theme(
     axis.title = element_blank(),
@@ -104,7 +112,7 @@ getHisto <- function(df) {
 
 getDays <- function(generation, serialInterval) round(generation * serialInterval, 0);
 
-epidemic <- function(size, generations, filename, name, R0, CFR, serialInterval = 5, width = 650, interval = 2) {
+epidemic <- function(size, generations, filename, name, R0, CFR, serialInterval = 5, recoveryInterval = 14, width = 650, interval = 2) {
   height <- width;
   df <- data.frame(expand.grid(c(list(x = 1:size, y = 1:size, status = 0))));
   df[df$x == ceiling(size / 2) & df$y == ceiling(size / 2),]$status = 1;
@@ -112,15 +120,15 @@ epidemic <- function(size, generations, filename, name, R0, CFR, serialInterval 
   df <- df[order(df$distance),];
   df[1:initialInfected,]$status <- 1;
   finalR <- getEffectiveR(df, R0);
-  # df_histogram <- cbind(df, generation=0);
 
   saveGIF({
     for (i in 0:generations) {
       R <- getEffectiveR(df, R0);
-      df_histogram <- if (exists("df_histogram")) rbind(df_histogram, cbind(df, generation=i)) else cbind(df, generation=i);
+      generationsToRecover <- getStochRound(recoveryInterval / serialInterval);
+      dfHistogram <- if (exists("dfHistogram")) rbind(dfHistogram, cbind(df, generation=i)) else cbind(df, generation=i);
       print(grid.arrange(
-        getDots(df, size, name, R0, CFR, getDays(i, serialInterval), height),
-        getHisto(df_histogram),
+        getDots(df, size, name, R0, CFR, getDays(i, serialInterval), generationsToRecover, height),
+        getHisto(dfHistogram, generationsToRecover),
         heights=c(height * relativeHeight, height * (1 - relativeHeight))
       ));
       
@@ -140,29 +148,29 @@ epidemic <- function(size, generations, filename, name, R0, CFR, serialInterval 
               prob
             );
           }
-          copy[copy$x == d[['x']] & copy$y == d[['y']],]$status <<- sample(3:4, 1, prob=c(1 - CFR, CFR));
+          copy[copy$x == d[['x']] & copy$y == d[['y']],]$status <<- 3;
         }
       });
-      copy$status <- apply(copy, 1, function(e) ifelse(between(e[['status']], 3.0, 3.9), e[['status']] + 0.1, e[['status']]));
+      copy$status <- apply(copy, 1, function(e) getNextStatus(e[['status']], serialInterval, recoveryInterval, CFR));
       df <- copy;
     }
   }, movie.name=filename, interval = interval, ani.width = width, ani.height = height);
 }
 
-epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, serialInterval, width) {
+epidemicFromβγ <- function(size, generations, filename, name, β, γ, CFR, serialInterval, recoveryInterval, width) {
   # β == transmission rate per infectious individua
   # γ == recovery rate; 1/γ == infectious period
   R0 <- round(β / γ, 2);
-  epidemic(size, generations, filename, name, R0, CFR, serialInterval, width);
+  epidemic(size, generations, filename, name, R0, CFR, serialInterval, recoveryInterval, width);
 }
 
-epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR, serialInterval, width) {
+epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR, serialInterval, recoveryInterval, width) {
   # τ = infection per contact
   # c = contact rate
   # β = τ * c = contact rate * infection per contact
   β <- c * τ;
   R0 <- round(β / γ, 2);
-  epidemic(size, generations, filename, name, R0, CFR, serialInterval, width);
+  epidemic(size, generations, filename, name, R0, CFR, serialInterval, recoveryInterval, width);
 }
 
 # R0s from https://en.wikipedia.org/wiki/Basic_reproduction_number
@@ -191,27 +199,29 @@ epidemicFromRates <- function(size, generations, filename, name, τ, c, γ, CFR,
 # Smallpox serial interval (18 days) https://academic.oup.com/aje/article/180/9/865/2739204
 # Measles serial interval (12 days) https://academic.oup.com/aje/article/180/9/865/2739204
 # renderFromR0 <- data.frame(
-#   name = c('MERS', 'Influenza', 'Covid-19', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
+#   name = c('MERS', 'Influenza', 'Covid-19 (Unmitigated)', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
 #   fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
 #   serialInterval = c(13, 3, 5, 15, 8, 20, 18, 18, 12),
+#   recoveryInterval = c(14, 14, 14, 14, 14, 14, 14, 14, 14),
 #   CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
 #   R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
 # );
 
 renderFromR0 <- data.frame(
-   name = c('Covid-19 - Low Estimates', 'Covid-19 - High Estimates', 'Covid-19 - Baseline', 'Covid-19 - R = ¾ R0', 'Covid-19 - R = 62.5% R0', 'Covid-19 - R = ½ R0'),
+   name = c('Covid-19 (Low Estimates)', 'Covid-19 (High Estimates)', 'Covid-19 (Unmitigated)', 'Covid-19 (R = ¾ R0)', 'Covid-19 (R = 62.5% R0)', 'Covid-19 (R = ½ R0)'),
    fileName = c('Covid-19-low.gif', 'Covid-19-high.gif', 'Covid-19-mid.gif', 'Covid-19-75.gif', 'Covid-19-625.gif', 'Covid-19-half.gif'),
    serialInterval = c(5, 5, 5, 5, 5, 5),
+   recoveryInterval = c(14, 14, 14, 14, 14, 14),
    CFR = c(0.0094, 0.034, 0.023, 0.01, 0.01, 0.005),
    R0 = c(1.4, 3.28, 2.5, 1.875, 1.56, 1.25)
 );
 
 apply(
-  renderFromR0[c(3, 4),],
+  renderFromR0[c(4),],
   1,
   function(d) epidemic(
     size=51,
-    generations=25,
+    generations=40,
     interval=1.0,
     width=650,
     file=(d[['fileName']]),
