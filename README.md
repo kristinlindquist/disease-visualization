@@ -6,7 +6,7 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 ## R0s
 * [Various](https://en.wikipedia.org/wiki/Basic_reproduction_number)
 * [SARS (1.77-1.85)](https://www.biorxiv.org/content/10.1101/2020.01.25.919787v1)
-* [Seasonal Flu](https://www.ncbi.nlm.nih.gov/pubmed/19545404)
+* [Seasonal Influenza](https://www.ncbi.nlm.nih.gov/pubmed/19545404)
 * [Covid-19 (1.4-2.5)](https://www.who.int/news-room/detail/23-01-2020-statement-on-the-meeting-of-the-international-health-regulations-(2005)-emergency-committee-regarding-the-outbreak-of-novel-coronavirus-(2019-ncov))
 * [Covid-19 high (mean 3.28, median 2.79)](https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
 
@@ -17,7 +17,7 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 * [Covid-19 IFR (0.94%)](https://institutefordiseasemodeling.github.io/nCoV-public/analyses/first_adjusted_mortality_estimates_and_risk_assessment/2019-nCoV-preliminary_age_and_time_adjusted_mortality_rates_and_pandemic_risk_assessment.html)
 * [Covid-19 IFR low (0.3%–1%)](https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200219-sitrep-30-covid-19.pdf?sfvrsn=3346b04f_2)
 * [Ebola, SARS and MERS CFR](https://ourworldindata.org/coronavirus)
-* [Seasonal Flu CFR](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
+* [Seasonal Influenza CFR](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
 * [Smallpox CFR](https://en.wikipedia.org/wiki/Smallpox)
 * [Measles CFR](https://www.cdc.gov/vaccines/pubs/pinkbook/downloads/meas.pdf)
 * [Mumps CFR](https://en.wikipedia.org/wiki/List_of_human_disease_case_fatality_rates)
@@ -25,7 +25,7 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 
 ## Serial Interval
 * [MERS (13 days)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5930778/)
-* [flu (3 days)](https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200306-sitrep-46-covid-19.pdf?sfvrsn=96b04adf_2)
+* [Seasonal Influenza (3 days)](https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200306-sitrep-46-covid-19.pdf?sfvrsn=96b04adf_2)
 * [Covid-19 (5-6 days)](https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200306-sitrep-46-covid-19.pdf?sfvrsn=96b04adf_2)
 * [Ebola (15.3 days)](https://www.sciencedirect.com/science/article/pii/S1755436515000341)
 * [SARS (8.4 days)](https://dash.harvard.edu/bitstream/handle/1/25620506/Transmission%20dynamics%20and%20control%20of%20severe%20acute%20respiratory%20syndrome.pdf?sequence=1)
