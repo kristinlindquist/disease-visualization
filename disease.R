@@ -204,7 +204,7 @@ renderFromR0 <- data.frame(
 );
 
 apply(
-  renderFromR0[c(6),],
+  renderFromR0[c(2),],
   1,
   function(d) epidemic(
     size=51,
