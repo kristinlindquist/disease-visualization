@@ -10,7 +10,7 @@ library('reshape2')
 relativeHeight <- 0.85;
 S0 <- 1.0;
 initialInfected <- 1;
-standardInterval <- 5;
+standardInterval <- 2;
 
 # https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659
 # assumes "susceptible depletion" kicking in
@@ -83,12 +83,12 @@ getStochRound <- function(x) {
   trunc(x) + adj;
 }
 
-getDots <- function(df, size, name, R0, CFR, days, height) {
+getDots <- function(df, size, name, R0, CFR, days, serialInterval, height) {
   ggplot(df, aes(x=x, y=y, fill=getColors(df$status))) + 
     geom_point(color=getColors(df$status), size = getDotSize(size, height)) +
     labs(
       title=name,
-      subtitle=paste('Day ', days, ', R0=', R0, ', CFR=', CFR * 100, '%', sep='')
+      subtitle=paste('Day ', days, ', R0=', R0, ', CFR=', CFR * 100, '%', ', SI=', serialInterval, ' days', sep='')
     ) +
     theme(
       axis.title = element_blank(),
@@ -130,7 +130,7 @@ epidemic <- function(size, iterations, filename, name, R0, CFR, serialInterval =
     for (i in 0:iterations) {
       dfHistogram <- if (exists("dfHistogram")) rbind(dfHistogram, cbind(df, iteration=i)) else cbind(df, iteration=i);
       print(grid.arrange(
-        getDots(df, size, name, R0, CFR, getDays(i, standardInterval), height),
+        getDots(df, size, name, R0, CFR, getDays(i, standardInterval), serialInterval, height),
         getHisto(dfHistogram),
         heights=c(height * relativeHeight, height * (1 - relativeHeight))
       ));
@@ -185,31 +185,31 @@ epidemic <- function(size, iterations, filename, name, R0, CFR, serialInterval =
 # Rubella serial interval (18 days) https://academic.oup.com/aje/article/180/9/865/2739204
 # Smallpox serial interval (18 days) https://academic.oup.com/aje/article/180/9/865/2739204
 # Measles serial interval (12 days) https://academic.oup.com/aje/article/180/9/865/2739204
-renderFromR0 <- data.frame(
-  name = c('MERS', 'Influenza', 'Covid-19 (Unmitigated)', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
-  fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
-  serialInterval = c(13, 3, 5, 15, 8, 20, 18, 18, 12),
-  recoveryInterval = c(14, 14, 14, 14, 14, 14, 14, 14, 14),
-  CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
-  R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
-);
-
 # renderFromR0 <- data.frame(
-#    name = c('Covid-19 (Low Estimates)', 'Covid-19 (High Estimates)', 'Covid-19 (Unmitigated)', 'Covid-19 (R = ¾ R0)', 'Covid-19 (R = 62.5% R0)', 'Covid-19 (R = ½ R0)'),
-#    fileName = c('Covid-19-low.gif', 'Covid-19-high.gif', 'Covid-19-mid.gif', 'Covid-19-75.gif', 'Covid-19-625.gif', 'Covid-19-half.gif'),
-#    serialInterval = c(5, 5, 5, 5, 5, 5),
-#    recoveryInterval = c(14, 14, 14, 14, 14, 14),
-#    CFR = c(0.0094, 0.034, 0.023, 0.01, 0.01, 0.005),
-#    R0 = c(1.4, 3.28, 2.5, 1.875, 1.56, 1.25)
+#   name = c('MERS', 'Influenza', 'Covid-19 (Unmitigated)', 'Ebola', 'SARS', 'Mumps', 'Rubella', 'Smallpox', 'Measles'),
+#   fileName = c('MERS.gif', 'Influenza.gif', 'Covid-19.gif', 'Ebola.gif', 'SARS.gif', 'Mumps.gif', 'Rubella.gif', 'Smallpox.gif', 'Measles.gif'),
+#   serialInterval = c(13, 3, 5, 15, 8, 20, 18, 18, 12),
+#   recoveryInterval = c(14, 14, 14, 14, 14, 14, 14, 14, 14),
+#   CFR = c(0.34, 0.001, 0.023, 0.50, 0.10, 0.01, 0.001, 0.30, 0.002),
+#   R0 = c(0.8, 1.3, 2.5, 2, 1.85, 5.5, 6, 6, 15)
 # );
 
+renderFromR0 <- data.frame(
+   name = c('Covid-19 (Low Estimates)', 'Covid-19 (High Estimates)', 'Covid-19 (Unmitigated)', 'Covid-19 (R = ¾ R0)', 'Covid-19 (R = 62.5% R0)', 'Covid-19 (R = ½ R0)'),
+   fileName = c('Covid-19-low.gif', 'Covid-19-high.gif', 'Covid-19-mid.gif', 'Covid-19-75.gif', 'Covid-19-625.gif', 'Covid-19-half.gif'),
+   serialInterval = c(5, 5, 5, 5, 5, 5),
+   recoveryInterval = c(14, 14, 14, 14, 14, 14),
+   CFR = c(0.003, 0.034, 0.023, 0.01, 0.01, 0.005),
+   R0 = c(1.4, 3.28, 2.5, 1.875, 1.56, 1.25)
+);
+
 apply(
-  renderFromR0[c(8),],
+  renderFromR0[c(6),],
   1,
   function(d) epidemic(
     size=51,
-    iterations=40, # ~ generations, if serialInterval == standardInterval
-    interval=1.0,
+    iterations=50, # ~ generations, if serialInterval == standardInterval
+    interval=0.5,
     width=650,
     file=(d[['fileName']]),
     name=(d[['name']]),
