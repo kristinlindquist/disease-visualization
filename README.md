@@ -9,6 +9,7 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 * [Seasonal Influenza (1.3)](https://www.ncbi.nlm.nih.gov/pubmed/19545404)
 * [Covid-19 (1.4-2.5)](https://www.who.int/news-room/detail/23-01-2020-statement-on-the-meeting-of-the-international-health-regulations-(2005)-emergency-committee-regarding-the-outbreak-of-novel-coronavirus-(2019-ncov))
 * [Covid-19 high (mean 3.28, median 2.79)](https://academic.oup.com/jtm/advance-article/doi/10.1093/jtm/taaa021/5735319)
+* [Covid-19 (1.32 with a corresponding SI of 3.96)](https://www.jwatch.org/na51171/2020/03/27/serial-interval-covid-19)
 
 ## Fatality Rates
 * [Covid-19 high 3.4%](https://www.who.int/dg/speeches/detail/who-director-general-s-opening-remarks-at-the-media-briefing-on-covid-19---3-march-2020)
@@ -27,6 +28,7 @@ Assumes a completely isolated, small community in which [susceptible depletion](
 * [MERS (13 days)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5930778/)
 * [Seasonal Influenza (3 days)](https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200306-sitrep-46-covid-19.pdf?sfvrsn=96b04adf_2)
 * [Covid-19 (5-6 days)](https://www.who.int/docs/default-source/coronaviruse/situation-reports/20200306-sitrep-46-covid-19.pdf?sfvrsn=96b04adf_2)
+* [Covid-19 (3.96 with correspond R0 of 1.32)](https://www.jwatch.org/na51171/2020/03/27/serial-interval-covid-19)
 * [Ebola (15.3 days)](https://www.sciencedirect.com/science/article/pii/S1755436515000341)
 * [SARS (8.4 days)](https://dash.harvard.edu/bitstream/handle/1/25620506/Transmission%20dynamics%20and%20control%20of%20severe%20acute%20respiratory%20syndrome.pdf?sequence=1)
 * [Mumps (20 days)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5223546/)
