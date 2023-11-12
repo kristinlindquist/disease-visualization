@@ -3,6 +3,9 @@ A simple disease spread visualization based on R0, CFR, serial interval and the 
 
 Assumes a completely isolated, small community in which [susceptible depletion](https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2016.0659) kicks in, using the final size relation s∞ = S(0)e^[–R0(1–s∞)] [[1](https://mathematicsinindustry.springeropen.com/track/pdf/10.1186/s13362-019-0058-7) [2](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3506030/)]. Other assumptions include homogeneous contact & transmission rates (whereas better models consider heterogeneous contact & transmission rates, e.g. [[1](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4808916/), [2](https://www.uvm.edu/pdodds/research/papers/years/2005/watts2005a.pdf), [3](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0120701)]), that [serial interval == generation interval](https://nccid.ca/publications/glossary-terms-infectious-disease-modelling-proposal-consistent-language/) and that no behavior change occurs over the course of the epidemic. If you see any errors or have questions/concerns/comments, please [hit me up](mailto:kristin@rationally.io).
 
+## Example (Smallpox)
+![Smallpox](https://github.com/kristinlindquist/disease-visualization/assets/9382486/ce6440bf-4d83-42d7-a1bd-b28972bd2a25)
+
 ## R0s
 * [Various](https://en.wikipedia.org/wiki/Basic_reproduction_number)
 * [SARS (1.77-1.85)](https://www.biorxiv.org/content/10.1101/2020.01.25.919787v1)
